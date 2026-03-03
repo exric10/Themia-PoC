@@ -1,6 +1,6 @@
 # Themia – Legal AI Copilot · PoC
 
-Local demo of a legal RAG + agent pipeline. Runs entirely on your machine — no API keys required.
+Local demo of a legal RAG + agent pipeline.
 
 ## Stack
 
@@ -64,4 +64,3 @@ Change `OLLAMA_MODEL` in `backend/main.py` and the pull command in `docker-compo
 | `mistral` | 4 GB | 8 GB |
 | `llama3.2` | 2 GB | 6 GB |
 | `llama3.1:8b` | 5 GB | 10 GB |
-```
