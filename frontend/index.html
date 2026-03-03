@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Themia · Legal Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #0c0b09;
+      --bg2:       #111009;
+      --bg3:       #171510;
+      --border:    #252218;
+      --border2:   #302c20;
+      --gold:      #c9a84c;
+      --gold-dim:  #7a6328;
+      --gold-glow: rgba(201,168,76,0.12);
+      --text:      #e4dcc8;
+      --text-dim:  #8a8070;
+      --text-faint:#3a3528;
+      --green:     #4a8c5c;
+      --green-bg:  #0d1f12;
+      --blue:      #4a6a8c;
+      --blue-bg:   #0d1520;
+      --red:       #8c4a4a;
+      --red-bg:    #1f0d0d;
+      --radius:    3px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      min-height: 100vh;
+      line-height: 1.6;
+      /* subtle noise texture */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(12,11,9,0.96);
+      backdrop-filter: blur(8px);
+    }
+
+    .logo-mark {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 600; color: var(--bg);
+      font-family: 'Cormorant Garamond', serif;
+      flex-shrink: 0;
+    }
+
+    .logo-text { line-height: 1; }
+    .logo-name  { font-size: 22px; font-weight: 600; letter-spacing: 0.1em; color: var(--gold); }
+    .logo-sub   { font-size: 10px; letter-spacing: 0.25em; color: var(--text-dim); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+    .status-pill {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text-dim);
+      border: 1px solid var(--border2);
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-faint);
+      transition: background 0.3s;
+    }
+    .status-dot.ready  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.error  { background: var(--red); }
+    .status-dot.loading { background: var(--gold); animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Query panel ────────────────────────────────────────── */
+    .query-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+
+    .panel-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 18px; line-height: 1.55;
+      padding: 14px 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--gold-dim); }
+    textarea::placeholder { color: var(--text-faint); font-style: italic; }
+
+    .samples {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 12px;
+    }
+    .sample-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 2px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sample-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    .actions { display: flex; gap: 10px; margin-top: 16px; }
+
+    .btn-primary {
+      padding: 12px 28px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border: none; border-radius: var(--radius);
+      color: var(--bg); font-family: 'Cormorant Garamond', serif;
+      font-size: 15px; font-weight: 600; letter-spacing: 0.05em;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 12px 20px;
+      background: transparent; border: 1px solid var(--border2);
+      border-radius: var(--radius); color: var(--text-dim);
+      font-family: 'Cormorant Garamond', serif; font-size: 15px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    /* ── Pipeline progress ──────────────────────────────────── */
+    .pipeline {
+      margin-bottom: 32px;
+      display: none;
+    }
+    .pipeline.visible { display: block; }
+
+    .pipeline-steps {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+
+    .pipe-step {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: all 0.3s ease;
+      opacity: 0.4;
+    }
+    .pipe-step.active  { opacity: 1; border-color: var(--gold-dim); background: var(--bg3); }
+    .pipe-step.done    { opacity: 1; border-color: var(--border2); }
+    .pipe-step.pending { opacity: 0.25; }
+
+    .pipe-num {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      border: 1px solid var(--border2); display: flex;
+      align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-dim);
+      transition: all 0.3s;
+    }
+    .pipe-step.done .pipe-num  { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .pipe-step.active .pipe-num { border-color: var(--gold); color: var(--gold); }
+
+    .pipe-info { flex: 1; min-width: 0; }
+    .pipe-tool { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+    .pipe-step.done   .pipe-tool { color: #ccc; }
+    .pipe-step.active .pipe-tool { color: var(--gold); }
+    .pipe-detail { font-size: 12px; color: var(--text-dim); margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
+
+    .pipe-spinner {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold); flex-shrink: 0; margin-top: 8px;
+      animation: blink 0.8s infinite;
+    }
+
+    /* ── Sections ───────────────────────────────────────────── */
+    .section { margin-bottom: 28px; }
+
+    .section-header {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 10px; padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Intent badge row ───────────────────────────────────── */
+    .intent-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      padding: 4px 10px; border-radius: 2px; letter-spacing: 0.05em;
+    }
+    .badge-gold  { background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim); color: var(--gold); }
+    .badge-blue  { background: var(--blue-bg); border: 1px solid var(--blue); color: #7aaccc; }
+    .badge-red   { background: var(--red-bg); border: 1px solid var(--red); color: #cc7a7a; }
+    .badge-green { background: var(--green-bg); border: 1px solid var(--green); color: #7acc8a; }
+    .badge-dim   { background: var(--bg3); border: 1px solid var(--border); color: var(--text-dim); }
+
+    /* ── Chunks ─────────────────────────────────────────────── */
+    .chunks { display: flex; flex-direction: column; gap: 8px; }
+    .chunk {
+      padding: 14px 16px; border-radius: var(--radius);
+      border-left: 3px solid transparent;
+    }
+    .chunk.client_doc  { background: rgba(74,140,92,0.06);  border-left-color: var(--green); }
+    .chunk.legislation { background: rgba(74,106,140,0.06); border-left-color: var(--blue); }
+    .chunk.case_law    { background: rgba(140,74,74,0.06);  border-left-color: var(--red); }
+
+    .chunk-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .chunk-idx {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--gold); background: rgba(201,168,76,0.1);
+      padding: 2px 6px; border-radius: 2px; flex-shrink: 0;
+    }
+    .chunk-title { font-size: 13px; font-style: italic; color: #ccc; flex: 1; }
+    .chunk-scores {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-dim);
+      margin-left: auto; white-space: nowrap;
+    }
+    .chunk-content { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+    .chunk-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .chunk-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px;
+      padding: 1px 6px; background: var(--bg); border: 1px solid var(--border); color: var(--text-faint);
+      border-radius: 2px;
+    }
+
+    /* ── Answer ─────────────────────────────────────────────── */
+    .answer-box {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .answer-text {
+      font-size: 17px; line-height: 1.85; white-space: pre-wrap;
+      color: var(--text);
+    }
+    .answer-text strong, .answer-text b { color: var(--gold); font-weight: 600; }
+
+    /* ── Citation check ─────────────────────────────────────── */
+    .citation-box {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    }
+    .citation-ok    { background: var(--green-bg); border: 1px solid var(--green); color: #7acc8a; }
+    .citation-warn  { background: var(--red-bg);   border: 1px solid var(--red);   color: #cc7a7a; }
+
+    .flags { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .flag-item { padding: 6px 10px; background: rgba(0,0,0,0.3); border-left: 2px solid var(--red); color: var(--text-dim); border-radius: 1px; }
+
+    /* ── Risk warning ───────────────────────────────────────── */
+    .risk-banner {
+      padding: 12px 16px; margin-top: 12px;
+      background: rgba(140,74,74,0.12); border: 1px solid var(--red);
+      border-radius: var(--radius); font-size: 13px; color: #cc7a7a;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Error ──────────────────────────────────────────────── */
+    .error-box {
+      padding: 16px; background: var(--red-bg); border: 1px solid var(--red);
+      border-radius: var(--radius); color: #cc7a7a; font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Model warming notice ───────────────────────────────── */
+    .warming-notice {
+      padding: 10px 14px; margin-bottom: 16px;
+      background: rgba(201,168,76,0.06); border: 1px solid var(--gold-dim);
+      border-radius: var(--radius); font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--gold); display: none;
+    }
+    .warming-notice.visible { display: block; }
+
+    /* ── Scrollbar ──────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── Divider ────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">Θ</div>
+  <div class="logo-text">
+    <div class="logo-name">THEMIA</div>
+    <div class="logo-sub">Legal AI Copilot · PoC</div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">checking…</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Query -->
+  <div class="query-panel">
+    <div class="panel-label">Legal Question</div>
+    <textarea id="queryInput" placeholder="Ask a legal question over the firm's documents, legislation, and case law…" rows="4"></textarea>
+    <div class="samples">
+      <button class="sample-btn" onclick="setSample(0)">GDPR fines for data breach</button>
+      <button class="sample-btn" onclick="setSample(1)">EU→US data transfer rules</button>
+      <button class="sample-btn" onclick="setSample(2)">Acme merger indemnification</button>
+      <button class="sample-btn" onclick="setSample(3)">NDA breach liability Spain</button>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="runBtn" onclick="runPipeline()">Run Legal Analysis</button>
+      <button class="btn-secondary" id="resetBtn" onclick="reset()" style="display:none">New Query</button>
+    </div>
+  </div>
+
+  <!-- Model warming notice -->
+  <div class="warming-notice" id="warmingNotice">
+    ⏳ First query may take 30–60 s while Ollama loads the model into memory. Subsequent queries are faster.
+  </div>
+
+  <!-- Pipeline steps -->
+  <div class="pipeline" id="pipeline">
+    <div class="panel-label">Agent Pipeline</div>
+    <div class="pipeline-steps" id="pipelineSteps"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results"></div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+
+  const SAMPLES = [
+    "What are the GDPR fines for a data breach affecting EU citizens?",
+    "Can we transfer personal data from the EU to the US under current rules?",
+    "What are the indemnification obligations in the Acme-Globex merger agreement?",
+    "What liability does an NDA breach expose us to under Spanish law?",
+  ];
+
+  const STEPS = [
+    { tool: "classify_intent()",   detail: "Detect domain · jurisdiction · risk · corpora to search" },
+    { tool: "expand_query()",      detail: "Generate synonym variants to improve retrieval recall" },
+    { tool: "hybrid_retrieve()",   detail: "BM25 + dense embeddings → Reciprocal Rank Fusion" },
+    { tool: "rerank_dedup()",      detail: "Cross-encoder joint scoring · exact + near-dedup removal" },
+    { tool: "guided_reasoning()",  detail: "CoT prompt → Ollama (mistral) → citation-anchored answer" },
+    { tool: "verify_citations()",  detail: "Check index bounds · uncited claims · stale sources" },
+  ];
+
+  function setSample(i) { document.getElementById('queryInput').value = SAMPLES[i]; }
+
+  // ── Health check ──────────────────────────────────────────
+  async function checkHealth() {
+    const dot  = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    dot.className = 'status-dot loading'; text.textContent = 'connecting…';
+    try {
+      const r = await fetch(`${API}/health`);
+      const d = await r.json();
+      if (d.ollama === 'connected' && d.model_ready) {
+        dot.className = 'status-dot ready'; text.textContent = `ollama · ${d.model} ready`;
+      } else if (d.ollama === 'connected') {
+        dot.className = 'status-dot loading'; text.textContent = 'ollama connected · pulling model…';
+        setTimeout(checkHealth, 5000);
+      } else {
+        dot.className = 'status-dot error'; text.textContent = 'ollama unreachable';
+      }
+    } catch {
+      dot.className = 'status-dot error'; text.textContent = 'backend unreachable';
+    }
+  }
+
+  // ── Pipeline animation ────────────────────────────────────
+  function renderPipeline(activeStep = -1) {
+    const container = document.getElementById('pipelineSteps');
+    container.innerHTML = STEPS.map((s, i) => {
+      let cls = 'pipe-step pending';
+      if (i < activeStep)  cls = 'pipe-step done';
+      if (i === activeStep) cls = 'pipe-step active';
+      const num = i < activeStep ? '✓' : i + 1;
+      const spinner = i === activeStep ? '<div class="pipe-spinner"></div>' : '';
+      return `<div class="${cls}">
+        <div class="pipe-num">${num}</div>
+        <div class="pipe-info">
+          <div class="pipe-tool">${s.tool}</div>
+          <div class="pipe-detail">${s.detail}</div>
+        </div>
+        ${spinner}
+      </div>`;
+    }).join('');
+  }
+
+  async function animateSteps(totalSteps, delayMs = 600) {
+    for (let i = 0; i < totalSteps; i++) {
+      renderPipeline(i);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+
+  // ── Source type helpers ───────────────────────────────────
+  const SOURCE_LABEL = { client_doc: 'CLIENT DOC', legislation: 'LEGISLATION', case_law: 'CASE LAW' };
+  const SOURCE_CLASS = { client_doc: 'badge-green', legislation: 'badge-blue', case_law: 'badge-dim' };
+
+  // ── Render results ────────────────────────────────────────
+  function renderResults(data) {
+    const container = document.getElementById('results');
+
+    // Intent row
+    const risk = data.intent.risk_level === 'high' ? 'badge-red' : 'badge-green';
+    let html = `
+      <div class="section">
+        <div class="section-header">Intent Classification</div>
+        <div class="intent-row">
+          <span class="badge badge-gold">domain: ${data.intent.domain}</span>
+          <span class="badge badge-blue">jurisdiction: ${data.intent.jurisdiction}</span>
+          <span class="badge ${risk}">risk: ${data.intent.risk_level}</span>
+          ${data.intent.corpora.map(c => `<span class="badge badge-dim">${c}</span>`).join('')}
+        </div>
+      </div>`;
+
+    // Expanded queries
+    if (data.expanded_queries.length > 1) {
+      html += `<div class="section">
+        <div class="section-header">Query Variants (${data.expanded_queries.length})</div>
+        ${data.expanded_queries.map((q, i) => `
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);padding:3px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--gold-dim)">[${i === 0 ? 'original' : 'variant ' + i}]</span> ${q}
+          </div>`).join('')}
+      </div>`;
+    }
+
+    // Chunks
+    html += `<div class="section">
+      <div class="section-header">Retrieved Context (${data.retrieved_chunks.length} chunks)</div>
+      <div class="chunks">
+        ${data.retrieved_chunks.map(c => `
+          <div class="chunk ${c.source_type}">
+            <div class="chunk-header">
+              <span class="chunk-idx">[${c.index}]</span>
+              <span class="badge ${SOURCE_CLASS[c.source_type] || 'badge-dim'}" style="font-size:9px">${SOURCE_LABEL[c.source_type] || c.source_type}</span>
+              <span class="chunk-title">${c.title}</span>
+              <span class="chunk-scores">BM25 ${c.bm25_score.toFixed(3)} · rerank ${c.rerank_score.toFixed(3)}</span>
+            </div>
+            <div class="chunk-content">${c.content}</div>
+            <div class="chunk-tags">${c.tags.map(t => `<span class="chunk-tag">${t}</span>`).join('')}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+    // Answer
+    html += `<div class="section">
+      <div class="section-header">Themia's Analysis</div>
+      <div class="answer-box">
+        <div class="answer-text">${escapeHtml(data.answer)}</div>
+      </div>
+    </div>`;
+
+    // Citation check
+    const citOk = data.citation_check.valid && data.citation_check.flags.length === 0;
+    html += `<div class="section">
+      <div class="section-header">Citation Verification</div>
+      <div class="citation-box ${citOk ? 'citation-ok' : 'citation-warn'}">
+        ${citOk
+          ? `✓ Citations valid · indices used: ${data.citation_check.citations_used.map(i => '['+i+']').join(' ')}`
+          : `⚠ Review flags detected`}
+        ${data.citation_check.flags.length ? `<div class="flags">${data.citation_check.flags.map(f => `<div class="flag-item">→ ${f}</div>`).join('')}</div>` : ''}
+      </div>
+      ${data.intent.risk_level === 'high' ? `<div class="risk-banner">🔴 High-risk query — route to senior lawyer before acting on this analysis</div>` : ''}
+    </div>`;
+
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Main run ──────────────────────────────────────────────
+  async function runPipeline() {
+    const query = document.getElementById('queryInput').value.trim();
+    if (!query) return;
+
+    // UI state
+    document.getElementById('runBtn').disabled = true;
+    document.getElementById('runBtn').textContent = 'Analysing…';
+    document.getElementById('resetBtn').style.display = 'none';
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('pipeline').classList.add('visible');
+    document.getElementById('warmingNotice').classList.add('visible');
+
+    // Animate first 5 steps while waiting for API
+    const stepPromise = animateSteps(5, 700);
+    const apiPromise  = fetch(`${API}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+
+    let data;
+    try {
+      const [_, response] = await Promise.all([stepPromise, apiPromise]);
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || 'API error');
+      }
+      data = await response.json();
+    } catch (e) {
+      renderPipeline(-1);
+      document.getElementById('results').innerHTML = `<div class="error-box">⚠ ${e.message}</div>`;
+      document.getElementById('runBtn').disabled = false;
+      document.getElementById('runBtn').textContent = 'Run Legal Analysis';
+      document.getElementById('warmingNotice').classList.remove('visible');
+      return;
+    }
+
+    // Step 6 done
+    renderPipeline(6);
+    document.getElementById('warmingNotice').classList.remove('visible');
+    renderResults(data);
+
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').textContent = 'Run Legal Analysis';
+    document.getElementById('resetBtn').style.display = 'inline-block';
+  }
+
+  function reset() {
+    document.getElementById('queryInput').value = '';
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('pipeline').classList.remove('visible');
+    document.getElementById('resetBtn').style.display = 'none';
+    renderPipeline(-1);
+  }
+
+  // Enter to submit
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('queryInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) runPipeline();
+    });
+    checkHealth();
+    setInterval(checkHealth, 15000);
+  });
+</script>
+</body>
+</html>

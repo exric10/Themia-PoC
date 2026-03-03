@@ -1,0 +1,48 @@
+services:
+
+  # ── 1. Ollama – local LLM inference ──────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: themia-ollama
+    ports:
+      - "11434:11434"          # expose Ollama API (optional, for debugging)
+    volumes:
+      - ollama_data:/root/.ollama   # persist pulled models across restarts
+    # entrypoint: pull the model on first start, then serve
+    entrypoint: >
+      sh -c "ollama serve &
+             sleep 5 &&
+             ollama pull mistral &&
+             wait"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ollama list | grep -q mistral"]
+      interval: 30s
+      timeout: 60s
+      retries: 10
+      start_period: 120s      # give time for the first model pull (~4 GB)
+
+  # ── 2. FastAPI backend – RAG + agent pipeline ────────────────────────────
+  backend:
+    build: ./backend
+    container_name: themia-backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
+
+  # ── 3. Frontend – nginx serving the HTML UI ──────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: themia-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: on-failure
+
+volumes:
+  ollama_data:    # named volume → model survives `docker compose down`
